@@ -22,13 +22,13 @@ from EfficientDet.efficientdet.utils import BBoxTransform, ClipBoxes
 from EfficientDet.utils.utils import preprocess, invert_affine, postprocess, STANDARD_COLORS, standard_to_bgr, get_index_label, plot_one_box
 import cv2
 from utils.bb_polygon import check_bbox_intersect_or_outside_polygon,check_bbox_outside_polygon,counting_moi,point_to_line_distance,check_bbox_inside_polygon,tlbrs_to_mean_area,box_line_relative
-from counting_demo import opt_glob
 # opt_mod = opts().init()
-if opt_glob.detection_model=='Efficient':
+detection_model='Efficient'
+if detection_model=='Efficient':
     from EfficientDet.backbone import EfficientDetBackbone
     from EfficientDet.efficientdet.utils import BBoxTransform, ClipBoxes
     from EfficientDet.utils.utils import preprocess, invert_affine, postprocess, STANDARD_COLORS, standard_to_bgr, get_index_label, plot_one_box
-elif opt_glob.detection_model=='FasterRcnn':
+elif detection_model=='FasterRcnn':
     from Drone_FasterRCNN.maskrcnn_benchmark.config import cfg
     from Drone_FasterRCNN.drone_demo.predictor import COCODemo
 class STrack(BaseTrack):
@@ -333,7 +333,7 @@ class JDETracker(object):
         self.virtual_polygon= [
                 [
                     0,
-                    720
+                    680
                 ],
                 [
                     0,
@@ -345,7 +345,7 @@ class JDETracker(object):
                 ],
                 [
                     1270,
-                    720
+                    680
                 ]
             ]
     def box_cross_line(self,bbox_list,line):
@@ -402,7 +402,7 @@ class JDETracker(object):
         elif self.box_cross_line(track.track_trajectory[-4:],self.line4):
             paths={'6':self.paths['6'],'1':self.paths['1'],'12':self.paths['12']}
             mov_id= counting_moi(paths,[(track_center[0],track_center[-1])])
-            if str(mov_id[0])=='12' and track.track_trajectory[0][0]<=450:
+            if str(mov_id[0])=='12' and track.track_trajectory[0][0]<=500:
                 return 1 if track.track_trajectory[0][3]<=350 else 'undetermine'     
             return mov_id[0]
         else:

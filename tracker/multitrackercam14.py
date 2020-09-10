@@ -12,7 +12,6 @@ from tracking_utils.utils import *
 from tracker.basetrack import BaseTrack, TrackState
 from scipy.spatial.distance import cdist
 from imutils.object_detection import non_max_suppression
-import torchreid
 import math
 from torchvision.transforms import Resize,Normalize,ToTensor,Compose
 from PIL import Image
@@ -513,7 +512,7 @@ class JDETracker(object):
                         movement_id=counting_moi(self.paths,[(track_center[0],track_center[-1])])[0]
                         line_interest=self.line1 if str(movement_id)=='1' else self.line2 if str(movement_id)=='2' else None
                         out_direction='bottom' if str(movement_id)=='1' else 'up' if str(movement_id)=='2' else None
-                        frame_id=self.frame_id+kalman_predict_out_line(track,line_interest,out_direction) if line_interest is not None else self.frame_id
+                        frame_id=self.frame_id
                         if track_type in self.person_or_motorcycle:
                             if movement_id in ['5','6'] and (not check_track_line_reasonable(track,self.line1,'1',movement_id) or
                                                not check_track_line_reasonable(track,self.line2,'2',movement_id)):
@@ -548,7 +547,7 @@ class JDETracker(object):
                     movement_id=counting_moi(self.paths,[(track_center[0],track_center[-1])])[0]
                     line_interest=self.line1 if str(movement_id)=='1' else self.line2 if str(movement_id)=='2' else None
                     out_direction='bottom' if str(movement_id)=='1' else 'up' if str(movement_id)=='2' else None
-                    frame_id=self.frame_id+kalman_predict_out_line(track,line_interest,out_direction) if line_interest is not None else self.frame_id
+                    frame_id=self.frame_id+8
                     if track_type in self.person_or_motorcycle:
                             if movement_id in ['5','6'] and (not check_track_line_reasonable(track,self.line1,'1',movement_id) or
                                                not check_track_line_reasonable(track,self.line2,'2',movement_id)):

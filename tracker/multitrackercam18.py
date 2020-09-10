@@ -12,7 +12,6 @@ from tracking_utils.utils import *
 from tracker.basetrack import BaseTrack, TrackState
 from scipy.spatial.distance import cdist
 from imutils.object_detection import non_max_suppression
-import torchreid
 import math
 from torchvision.transforms import Resize,Normalize,ToTensor,Compose
 from PIL import Image
@@ -263,7 +262,7 @@ class JDETracker(object):
             'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
             'refrigerator', '', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier',
             'toothbrush']
-        self.person_or_motorcycle=['person']
+        self.person_or_motorcycle=['motorcycle','bicycle']
         self.obj_interest=[ 'motorcycle','bicycle', 'bus', 'truck','car'] if self.person_or_motorcycle[0]!='person' else [ 'person', 'bus', 'truck','car']
         print(self.obj_interest)
         self.detetection_model= EfficientDetBackbone(compound_coef=opt.compound_coef, num_classes=len(self.obj_list),
@@ -707,8 +706,7 @@ def heuristic_occlusion_detection(detections,thres=0.6): #0.5
         occ_iou.append(detections[idx].iou_box)
         if num_invalid >=2 :
             detections[idx].occlusion_status=True
-            if box_area<=3000 and detection_tlbrscore[4] >=0.55:
-                new_detection_pool.append(detections[idx])
+            
         else:
             new_detection_pool.append(detections[idx])
         if (num_invalid_thres2>=2 and box_area>40000):

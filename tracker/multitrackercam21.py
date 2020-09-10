@@ -165,6 +165,13 @@ class STrack(BaseTrack):
         def most_frequent(List): 
             return max(set(List), key = List.count)
         types=most_frequent(self.vehicle_types_list)
+        
+        if types=='bus' and len(np.where(np.asarray(self.vehicle_types_list)=='truck')[0])/len(self.vehicle_types_list)>=0.35:
+            return 'truck'
+        x1,y1,x2,y2=self.track_trajectory[-1]
+        s=(x2-x1)*(y2-y1)
+        if types=='car' and len(np.where(np.asarray(self.vehicle_types_list)=='truck')[0])/len(self.vehicle_types_list)>=0.35 and s>=50000:
+            return 'truck'
         return types
         # if classes in ['bicycle', 'motorcycle']:
         #     return 1
@@ -340,7 +347,7 @@ class JDETracker(object):
         two_wheel_polygon=init_polygon
         four_wheel_polygon=self.polygon
         virtual_polygon=self.virtual_polygon
-        huge_box_thres=140
+        huge_box_thres=230
         ''' Step 1: Network forward, get detections & embeddings'''
         with torch.no_grad():
             ori_imgs, framed_imgs, framed_metas = preprocess([img0], max_size=self.input_size)
@@ -364,15 +371,15 @@ class JDETracker(object):
                 if obj in self.obj_interest:
                     x1, y1, x2, y2 = out[0]['rois'][j].astype(np.int)
                     #bike,bicycle
-                    if (y1+y2)/2>0.5*height and float(out[0]['scores'][j])<=0.3:
+                    if (y1+y2)/2>height/2 and float(out[0]['scores'][j])<=0.3:
                         continue
-                    elif (y1+y2)/2>0.4*height and float(out[0]['scores'][j])<=0.35 and obj not in self.person_or_motorcycle:
+                    elif (y1+y2)/2>0.35*height and float(out[0]['scores'][j])<=0.35 and obj not in self.person_or_motorcycle:
                         continue
-                    if obj not in self.person_or_motorcycle and float(out[0]['scores'][j])>=0.3:
+                    if obj not in self.person_or_motorcycle and float(out[0]['scores'][j])>=0.2:
                         bbox.append([x1, y1, x2, y2])
                         score.append( float(out[0]['scores'][j]))
                         types.append(obj)
-                        huge_vehicles.append(False if (y2-y1)<=huge_box_thres and (x2-x1)<=huge_box_thres else True )
+                        huge_vehicles.append(False if (y2-y1)<=huge_box_thres else True )
                     elif obj in self.person_or_motorcycle: #['bicycle',  'motorcycle']
                         bbox.append([x1, y1, x2, y2])
                         score.append( float(out[0]['scores'][j]))
@@ -425,7 +432,7 @@ class JDETracker(object):
         detections=heuristic_occlusion_detection(detections)
         match_thres=100
         dists=np.zeros(shape=(len(strack_pool),len(detections)))
-        dists = matching.gate_cost_matrix(self.kalman_filter, dists, strack_pool, detections,type_diff=True)
+        dists = matching.gate_cost_matrix5(self.kalman_filter, dists, strack_pool, detections,type_diff=True)
         #dists = matching.fuse_motion(self.opt,self.kalman_filter, dists, strack_pool, detections,lost_map=lost_map_tracks,occlusion_map=occlusion_map,thres=match_thres)
         matches, u_track, u_detection = matching.linear_assignment(dists, thresh=match_thres)
         
@@ -507,16 +514,10 @@ class JDETracker(object):
                     if ((len(track.track_frames)>=2 and self.frame_id <=5) or (len(track.track_frames)>=5 and self.frame_id>=self.warmup_frame+5)) and idx==1:########## 4 is confident number of frame
 
                         track_center=[ [(x[0]+x[2])/2,(x[1]+x[3])/2] for x in track.track_trajectory]
-                        if track.track_id==45:
-                            print(track_center)
                         movement_id=counting_moi(self.paths,[(track_center[0],track_center[-1])])[0]
-                        line_interest=self.line1 if str(movement_id)=='1' else self.line2 if str(movement_id)=='2' else None
-                        out_direction='bottom' if str(movement_id)=='1' else 'up' if str(movement_id)=='2' else None
-                        frame_id=self.frame_id+kalman_predict_out_line(track,line_interest,out_direction) if line_interest is not None else self.frame_id
-                        if track_type in self.person_or_motorcycle:
-                            if movement_id in ['5','6'] and (not check_track_line_reasonable(track,self.line1,'1',movement_id) or
-                                               not check_track_line_reasonable(track,self.line2,'2',movement_id)):
-                                continue
+                        line_interest=self.line1 if str(movement_id)=='1' else self.line2
+                        out_direction='bottom' if str(movement_id)=='1' else 'up'
+                        frame_id=self.frame_id+kalman_predict_out_line(track,line_interest,out_direction)
                         out_of_polygon_tracklet.append((frame_id,track.track_id,track_type,movement_id))
                 else:
                     refind_stracks_copy.append(track) if idx ==0 else activated_starcks_copy.append(track)
@@ -542,16 +543,10 @@ class JDETracker(object):
                 removed_stracks.append(track)
                 if ((len(track.track_frames)>=2 and self.frame_id <=5) or (len(track.track_frames)>=6 and self.frame_id>=self.warmup_frame+5)):
                     track_center=[ [(x[0]+x[2])/2,(x[1]+x[3])/2] for x in track.track_trajectory]
-                    if track.track_id==45:
-                        print(track_center)
                     movement_id=counting_moi(self.paths,[(track_center[0],track_center[-1])])[0]
-                    line_interest=self.line1 if str(movement_id)=='1' else self.line2 if str(movement_id)=='2' else None
-                    out_direction='bottom' if str(movement_id)=='1' else 'up' if str(movement_id)=='2' else None
-                    frame_id=self.frame_id+kalman_predict_out_line(track,line_interest,out_direction) if line_interest is not None else self.frame_id
-                    if track_type in self.person_or_motorcycle:
-                            if movement_id in ['5','6'] and (not check_track_line_reasonable(track,self.line1,'1',movement_id) or
-                                               not check_track_line_reasonable(track,self.line2,'2',movement_id)):
-                                continue
+                    line_interest=self.line1 if str(movement_id)=='1' else self.line2
+                    out_direction='bottom' if str(movement_id)=='1' else 'up'
+                    frame_id=self.frame_id+kalman_predict_out_line(track,line_interest,out_direction)
                     out_of_polygon_tracklet.append((frame_id,track.track_id,track_type,movement_id))
             else:
                 lost_stracks_copy.append(track)
@@ -685,14 +680,6 @@ def kalman_predict_out_line(track,line,out_direction):
         print(mean_to_tlbr(mean))
 
     return predict_num_out
-def check_track_line_reasonable(track,line,line_id,mov_id):
-    if line_id=='2':
-        accept_mov_id=['2','3']
-    if line_id=='1':
-        accept_mov_id=['1','4']
-    if box_line_relative(track.track_trajectory[-2],line) =='cross' and mov_id not in accept_mov_id:
-        return False
-    return True
 import copy
 def mean_to_tlbr(mean):
     ret = copy.copy(mean[:4])
@@ -725,7 +712,7 @@ def heuristic_occlusion_detection(detections,thres=0.6): #0.5
         occ_iou.append(detections[idx].iou_box)
         if num_invalid >=2 :
             detections[idx].occlusion_status=True
-            if box_area<=3000 and detection_tlbrscore[4] >=0.15:
+            if box_area<=4500 and detection_tlbrscore[4] >=0.5:
                 new_detection_pool.append(detections[idx])
         else:
             new_detection_pool.append(detections[idx])

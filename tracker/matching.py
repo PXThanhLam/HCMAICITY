@@ -131,8 +131,7 @@ def gate_cost_matrix(kf, cost_matrix, tracks, detections, only_position=False,ty
             for j in range(len(cost_matrix[i])):
                 if tracks[i].vehicle_type!='Undetermine' and tracks[i].vehicle_type!=detections[j].infer_type() and tracks[i].vehicle_type in ['bus','truck']:
                     cost_matrix[i][j]=np.inf
-            # if tracks[i].track_id==2:
-            #     print(cost_matrix[i])
+           
     return cost_matrix
 
 def gate_cost_matrix4(kf, cost_matrix, tracks, detections, only_position=False,type_diff=False):

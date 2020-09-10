@@ -12,7 +12,6 @@ from tracking_utils.utils import *
 from tracker.basetrack import BaseTrack, TrackState
 from scipy.spatial.distance import cdist
 from imutils.object_detection import non_max_suppression
-import torchreid
 import math
 from torchvision.transforms import Resize,Normalize,ToTensor,Compose
 from PIL import Image

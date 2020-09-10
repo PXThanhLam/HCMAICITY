@@ -12,7 +12,6 @@ from tracking_utils.utils import *
 from tracker.basetrack import BaseTrack, TrackState
 from scipy.spatial.distance import cdist
 from imutils.object_detection import non_max_suppression
-import torchreid
 import math
 from torchvision.transforms import Resize,Normalize,ToTensor,Compose
 from PIL import Image
@@ -23,7 +22,14 @@ from EfficientDet.efficientdet.utils import BBoxTransform, ClipBoxes
 from EfficientDet.utils.utils import preprocess, invert_affine, postprocess, STANDARD_COLORS, standard_to_bgr, get_index_label, plot_one_box
 import cv2
 from utils.bb_polygon import check_bbox_intersect_or_outside_polygon,check_bbox_outside_polygon,counting_moi,point_to_line_distance,check_bbox_inside_polygon,tlbrs_to_mean_area,box_line_relative
-
+detection_model='Efficient'
+if detection_model=='Efficient':
+    from EfficientDet.backbone import EfficientDetBackbone
+    from EfficientDet.efficientdet.utils import BBoxTransform, ClipBoxes
+    from EfficientDet.utils.utils import preprocess, invert_affine, postprocess, STANDARD_COLORS, standard_to_bgr, get_index_label, plot_one_box
+elif detection_model=='FasterRcnn':
+    from Drone_FasterRCNN.maskrcnn_benchmark.config import cfg
+    from Drone_FasterRCNN.drone_demo.predictor import COCODemo
 class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
     out_of_frame_patience=5
@@ -253,26 +259,54 @@ class JDETracker(object):
         anchor_scales = [2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)]
         input_sizes = [512, 640, 768, 896, 1024, 1280, 1280, 1536]
         self.input_size = input_sizes[opt.compound_coef] 
-        self.obj_list =['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
-            'fire hydrant', '', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep',
-            'cow', 'elephant', 'bear', 'zebra', 'giraffe', '', 'backpack', 'umbrella', '', '', 'handbag', 'tie',
-            'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove',
-            'skateboard', 'surfboard', 'tennis racket', 'bottle', '', 'wine glass', 'cup', 'fork', 'knife', 'spoon',
-            'bowl', 'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut',
-            'cake', 'chair', 'couch', 'potted plant', 'bed', '', 'dining table', '', '', 'toilet', '', 'tv',
-            'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
-            'refrigerator', '', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier',
-            'toothbrush']
-        self.person_or_motorcycle=['motorcycle','bicycle']
-        self.obj_interest=[ 'motorcycle','bicycle', 'bus', 'truck','car'] if self.person_or_motorcycle[0]!='person' else [ 'person', 'bus', 'truck','car']
-        print(self.obj_interest)
-        self.detetection_model= EfficientDetBackbone(compound_coef=opt.compound_coef, num_classes=len(self.obj_list),
-                             ratios=anchor_ratios, scales=anchor_scales)
-       
-        self.detetection_model.load_state_dict(torch.load(f'EfficientDet/weights/efficientdet-d{opt.compound_coef}.pth'))
-        self.detetection_model.eval()
-        device = torch.device('cuda:0')
-        self.detetection_model = self.detetection_model.to(device)
+        if detection_model=='Efficient' :
+            self.obj_list =['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
+                'fire hydrant', '', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep',
+                'cow', 'elephant', 'bear', 'zebra', 'giraffe', '', 'backpack', 'umbrella', '', '', 'handbag', 'tie',
+                'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove',
+                'skateboard', 'surfboard', 'tennis racket', 'bottle', '', 'wine glass', 'cup', 'fork', 'knife', 'spoon',
+                'bowl', 'banana', 'apple', 'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut',
+                'cake', 'chair', 'couch', 'potted plant', 'bed', '', 'dining table', '', '', 'toilet', '', 'tv',
+                'laptop', 'mouse', 'remote', 'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink',
+                'refrigerator', '', 'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier',
+                'toothbrush']
+            self.person_or_motorcycle=['motorcycle','bicycle']
+            self.obj_interest=[ 'motorcycle','bicycle', 'bus', 'truck','car'] if self.person_or_motorcycle[0]!='person' else [ 'person', 'bus', 'truck','car']
+            self.detetection_model= EfficientDetBackbone(compound_coef=opt.compound_coef, num_classes=len(self.obj_list),
+                                ratios=anchor_ratios, scales=anchor_scales)
+        
+            self.detetection_model.load_state_dict(torch.load(f'EfficientDet/weights/efficientdet-d{opt.compound_coef}.pth'))
+            self.detetection_model.eval()
+            device = torch.device('cuda:0')
+            self.detetection_model = self.detetection_model.to(device)
+        elif  detection_model=='FasterRcnn' :
+            config_file = "Drone_FasterRCNN/drone_demo/e2e_faster_rcnn_X_101_32x8d_FPN_1x_visdrone.yaml"
+            cfg.merge_from_file(config_file)
+            cfg.merge_from_list(["MODEL.WEIGHT", "Drone_FasterRCNN/drone_demo/visdrone_model_0360000.pth"])
+            self.detetection_model = COCODemo(
+                cfg,
+                min_image_size=opt.min_img_size,
+                confidence_threshold=opt.conf_thres,
+            )
+            label_of_interest=[
+                    # "__background",
+                    # "unused",
+                    # "pedestrian",
+                    # "person",
+                    # "bicycle",
+                    "car",
+                    "van",
+                    "truck",
+                    # "tricycle",
+                    # "awning-tricycle",
+                    "bus",
+                    "motor"
+            ]
+            self.person_or_motorcycle=["motor"]
+            #'bicycle'
+            self.obj_interest=[ 'motor', 'bus', 'truck','car','van', "tricycle"] if self.person_or_motorcycle[0]!='person' else [ 'person', 'bus', 'truck','car','van', "tricycle"]
+        else:
+            raise('Not supported detector model')
 
         self.tracked_stracks = []  # type: list[STrack]
         self.lost_stracks = []  # type: list[STrack]
@@ -343,45 +377,73 @@ class JDETracker(object):
         virtual_polygon=self.virtual_polygon
         huge_box_thres=230
         ''' Step 1: Network forward, get detections & embeddings'''
-        with torch.no_grad():
-            ori_imgs, framed_imgs, framed_metas = preprocess([img0], max_size=self.input_size)
-            device = torch.device('cuda:0')
-            x = torch.stack([torch.from_numpy(fi).to(device) for fi in framed_imgs], 0)
-            x = x.to(torch.float32 ).permute(0, 3, 1, 2)
-            features, regression, classification, anchors = self.detetection_model(x)
-            regressBoxes = BBoxTransform()
-            clipBoxes = ClipBoxes()
-            out = postprocess(x,
-                        anchors, regression, classification,
-                        regressBoxes, clipBoxes,
-                        self.opt.det_thres, self.opt.nms_thres)
-            out = invert_affine(framed_metas, out)
-            bbox=[]
-            score=[]
-            types=[]
-            huge_vehicles=[]
-            for j in range(len(out[0]['rois'])):
-                obj = self.obj_list[out[0]['class_ids'][j]]
+        bbox=[]
+        score=[]
+        types=[]
+        huge_vehicles=[]
+        if self.opt.detection_model=='Efficient':
+            with torch.no_grad():
+                ori_imgs, framed_imgs, framed_metas = preprocess([img0], max_size=self.input_size)
+                device = torch.device('cuda:0')
+                x = torch.stack([torch.from_numpy(fi).to(device) for fi in framed_imgs], 0)
+                x = x.to(torch.float32 ).permute(0, 3, 1, 2)
+                features, regression, classification, anchors = self.detetection_model(x)
+                regressBoxes = BBoxTransform()
+                clipBoxes = ClipBoxes()
+                out = postprocess(x,
+                            anchors, regression, classification,
+                            regressBoxes, clipBoxes,
+                            self.opt.det_thres, self.opt.nms_thres)
+                out = invert_affine(framed_metas, out)
+                bbox=[]
+                score=[]
+                types=[]
+                huge_vehicles=[]
+                for j in range(len(out[0]['rois'])):
+                    obj = self.obj_list[out[0]['class_ids'][j]]
+                    if obj in self.obj_interest:
+                        x1, y1, x2, y2 = out[0]['rois'][j].astype(np.int)
+                        #bike,bicycle
+                        if (y1+y2)/2>0.62*height and float(out[0]['scores'][j])<=0.35:
+                            continue
+                        elif (y1+y2)/2>2*height/5 and float(out[0]['scores'][j])<=0.35 and obj not in self.person_or_motorcycle:
+                            continue
+                        if obj not in self.person_or_motorcycle and float(out[0]['scores'][j])>=0.2:
+                            bbox.append([x1, y1, x2, y2])
+                            score.append( float(out[0]['scores'][j]))
+                            types.append(obj)
+                            huge_vehicles.append(False if (y2-y1)<=huge_box_thres else True )
+                        elif obj in self.person_or_motorcycle: #['bicycle',  'motorcycle']
+                            bbox.append([x1, y1, x2, y2])
+                            score.append( float(out[0]['scores'][j]))
+                            types.append(obj)
+                            huge_vehicles.append(False)
+        elif self.opt.detection_model=='FasterRcnn':
+            predictions= self.detetection_model.compute_prediction(img0)
+            top_predictions=self.detetection_model.select_top_predictions(predictions)
+            scores = top_predictions.get_field("scores").tolist()
+            labels = top_predictions.get_field("labels").tolist()
+            labels = [self.detetection_model.CATEGORIES[i] for i in labels]
+            boxes = top_predictions.bbox.tolist()
+            for j in range(len(labels)):
+                obj = labels[j]
                 if obj in self.obj_interest:
-                    x1, y1, x2, y2 = out[0]['rois'][j].astype(np.int)
+                    x1, y1, x2, y2 = boxes[j]
                     #bike,bicycle
-                    if (y1+y2)/2>height/2 and float(out[0]['scores'][j])<=0.3:
+                    if (y1+y2)/2>0.5*height and float(scores[j])<=0.3:
                         continue
-                    elif (y1+y2)/2>2*height/5 and float(out[0]['scores'][j])<=0.35 and obj not in self.person_or_motorcycle:
-                        continue
-                    if obj not in self.person_or_motorcycle and float(out[0]['scores'][j])>=0.2:
+                    elif (y1+y2)/2>2*height/5 and float(scores[j])<=0.35 and obj not in self.person_or_motorcycle:
+                            continue
+                    if obj not in self.person_or_motorcycle and float(scores[j])>=0.2:
                         bbox.append([x1, y1, x2, y2])
-                        score.append( float(out[0]['scores'][j]))
+                        score.append( float(scores[j]))
                         types.append(obj)
                         huge_vehicles.append(False if (y2-y1)<=huge_box_thres else True )
-                    elif obj in self.person_or_motorcycle: #['bicycle',  'motorcycle']
+                    elif obj in self.person_or_motorcycle and float(scores[j])>=self.opt.det_thres: #['bicycle',  'motorcycle']
                         bbox.append([x1, y1, x2, y2])
-                        score.append( float(out[0]['scores'][j]))
+                        score.append( float(scores[j]))
                         types.append(obj)
-                        huge_vehicles.append(False)
-            print(huge_vehicles)
-            
-
+                        huge_vehicles.append(False)            
         # vis
         # print(len(bbox))
         # print(img0.shape)
@@ -405,9 +467,9 @@ class JDETracker(object):
         else:
             detections = []
         
-        detections_plot=detections.copy()
+        detections_plot=copy.deepcopy(detections)
 
-
+       
         ''' Add newly detected tracklets to tracked_stracks'''
         unconfirmed = []
         tracked_stracks = []  # type: list[STrack]
@@ -424,7 +486,8 @@ class JDETracker(object):
             #strack.predict()
         STrack.multi_predict(strack_pool)
         #dists = matching.embedding_distance(strack_pool, detections)
-        detections=heuristic_occlusion_detection(detections)
+        
+        
         match_thres=100
         dists=np.zeros(shape=(len(strack_pool),len(detections)))
         dists = matching.gate_cost_matrix(self.kalman_filter, dists, strack_pool, detections,type_diff=True)
@@ -479,10 +542,11 @@ class JDETracker(object):
         for inew in u_detection:
             track = detections[inew]
             track_init_polygon=init_polygon if not track.huge_vehicle else virtual_polygon
+         
             if track.score < self.det_thresh or track.occlusion_status==True or  check_bbox_outside_polygon(track_init_polygon,track.tlbr):
                 continue
             # track_types=self.person_or_motorcycle[0] if tlbrs_to_mean_area(track.track_trajectory) <=1500 else track.infer_type()
-            if self.frame_id>=5  and not check_bbox_inside_polygon(track_init_polygon,track.tlbr):#and track_types in self.person_or_motorcycle #person, motorcycle
+            if self.frame_id>=1  and not check_bbox_inside_polygon(track_init_polygon,track.tlbr):#and track_types in self.person_or_motorcycle #person, motorcycle
                 continue
             track.activate(self.kalman_filter, self.frame_id)
             activated_starcks.append(track)
@@ -530,7 +594,7 @@ class JDETracker(object):
                 out_polygon=two_wheel_polygon
                 p_type='two_wheel'
             else:
-                out_polygon=four_wheel_polygon if not track.huge_vehicle else virtual_polygon
+                out_polygon=four_wheel_polygon #if not track.huge_vehicle else virtual_polygon
                 p_type='four_wheel'
            
             if check_bbox_intersect_or_outside_polygon(out_polygon,track.tlbr) :
@@ -660,7 +724,7 @@ def kalman_predict_out_line(track,line,out_direction):
     prev_mean,prev_cov=track.mean,track.covariance
     kal_man=KalmanFilter()
     predict_thres=0 if out_direction=='up' else 0
-    max_long_predict=8 if out_direction=='up' else 2 if track.infer_type() in ['person','motorcycle','biycycle'] else 5
+    max_long_predict=8 if out_direction=='up' else 2 if track.infer_type() in ['person','motorcycle','biycycle','motor'] else 5
     while  box_line_relative(mean_to_tlbr(prev_mean),line) !=out_direction:
         predict_num_out+=1
         cur_mean=prev_mean #of t

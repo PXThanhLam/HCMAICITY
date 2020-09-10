@@ -22,13 +22,12 @@ from EfficientDet.efficientdet.utils import BBoxTransform, ClipBoxes
 from EfficientDet.utils.utils import preprocess, invert_affine, postprocess, STANDARD_COLORS, standard_to_bgr, get_index_label, plot_one_box
 import cv2
 from utils.bb_polygon import check_bbox_intersect_or_outside_polygon,check_bbox_outside_polygon,counting_moi,point_to_line_distance,check_bbox_inside_polygon,tlbrs_to_mean_area,box_line_relative
-from counting_demo import opt_glob
-# opt_mod = opts().init()
-if opt_glob.detection_model=='Efficient':
+detection_model='FasterRcnn'
+if detection_model=='Efficient':
     from EfficientDet.backbone import EfficientDetBackbone
     from EfficientDet.efficientdet.utils import BBoxTransform, ClipBoxes
     from EfficientDet.utils.utils import preprocess, invert_affine, postprocess, STANDARD_COLORS, standard_to_bgr, get_index_label, plot_one_box
-elif opt_glob.detection_model=='FasterRcnn':
+elif detection_model=='FasterRcnn':
     from Drone_FasterRCNN.maskrcnn_benchmark.config import cfg
     from Drone_FasterRCNN.drone_demo.predictor import COCODemo
 class STrack(BaseTrack):
@@ -171,7 +170,7 @@ class STrack(BaseTrack):
     def infer_type(self):
         def most_frequent(List): 
             return max(set(List), key = List.count)
-        if opt_glob.detection_model=='Efficient':
+        if detection_model=='Efficient':
             types=most_frequent(self.vehicle_types_list)
             return types
         else:
@@ -259,7 +258,7 @@ class JDETracker(object):
         anchor_scales = [2 ** 0, 2 ** (1.0 / 3.0), 2 ** (2.0 / 3.0)]
         input_sizes = [512, 640, 768, 896, 1024, 1280, 1280, 1536]
         self.input_size = input_sizes[opt.compound_coef] 
-        if opt_glob.detection_model=='Efficient' :
+        if detection_model=='Efficient' :
             self.obj_list =['person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat', 'traffic light',
                 'fire hydrant', '', 'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse', 'sheep',
                 'cow', 'elephant', 'bear', 'zebra', 'giraffe', '', 'backpack', 'umbrella', '', '', 'handbag', 'tie',
@@ -279,7 +278,7 @@ class JDETracker(object):
             self.detetection_model.eval()
             device = torch.device('cuda:0')
             self.detetection_model = self.detetection_model.to(device)
-        elif  opt_glob.detection_model=='FasterRcnn' :
+        elif  detection_model=='FasterRcnn' :
             config_file = "Drone_FasterRCNN/drone_demo/e2e_faster_rcnn_X_101_32x8d_FPN_1x_visdrone.yaml"
             cfg.merge_from_file(config_file)
             cfg.merge_from_list(["MODEL.WEIGHT", "Drone_FasterRCNN/drone_demo/visdrone_model_0360000.pth"])
@@ -406,9 +405,6 @@ class JDETracker(object):
                 obj = labels[j]
                 if obj in self.obj_interest:
                     x1, y1, x2, y2 = boxes[j]
-                    bbox.append([x1, y1, x2, y2])
-                    score.append( float(scores[j]))
-                    types.append(obj)
                     #bike,bicycle
                     if (y1+y2)/2>0.5*height and float(scores[j])<=0.35:
                         continue

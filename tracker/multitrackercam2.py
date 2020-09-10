@@ -24,15 +24,10 @@ import cv2
 from utils.bb_polygon import check_bbox_intersect_or_outside_polygon,check_bbox_outside_polygon,counting_moi,point_to_line_distance,check_bbox_inside_polygon,tlbrs_to_mean_area,box_line_relative
 from opts import opts
 import time
-from counting_demo import opt_glob
-# opt_mod = opts().init()
-if opt_glob.detection_model=='Efficient':
-    from EfficientDet.backbone import EfficientDetBackbone
-    from EfficientDet.efficientdet.utils import BBoxTransform, ClipBoxes
-    from EfficientDet.utils.utils import preprocess, invert_affine, postprocess, STANDARD_COLORS, standard_to_bgr, get_index_label, plot_one_box
-elif opt_glob.detection_model=='FasterRcnn':
-    from Drone_FasterRCNN.maskrcnn_benchmark.config import cfg
-    from Drone_FasterRCNN.drone_demo.predictor import COCODemo
+from EfficientDet.backbone import EfficientDetBackbone
+from EfficientDet.efficientdet.utils import BBoxTransform, ClipBoxes
+from EfficientDet.utils.utils import preprocess, invert_affine, postprocess, STANDARD_COLORS, standard_to_bgr, get_index_label, plot_one_box
+detection_model='Efficient'
 class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
     out_of_frame_patience=5
@@ -174,7 +169,7 @@ class STrack(BaseTrack):
     def infer_type(self):
         def most_frequent(List): 
             return max(set(List), key = List.count)
-        if opt_glob.detection_model=='Efficient':
+        if detection_model=='Efficient':
             types=most_frequent(self.vehicle_types_list)
             if types=='truck' and len(np.where(np.asarray(self.vehicle_types_list)=='car')[0])/len(self.vehicle_types_list)>=0.3:
                 return 'car'

@@ -12,7 +12,6 @@ from tracking_utils.utils import *
 from tracker.basetrack import BaseTrack, TrackState
 from scipy.spatial.distance import cdist
 from imutils.object_detection import non_max_suppression
-import torchreid
 import math
 from torchvision.transforms import Resize,Normalize,ToTensor,Compose
 from PIL import Image
@@ -166,7 +165,7 @@ class STrack(BaseTrack):
         def most_frequent(List): 
             return max(set(List), key = List.count)
         types=most_frequent(self.vehicle_types_list)
-        if types=='bus' and len(np.where(np.asarray(self.vehicle_types_list)=='truck')[0])/len(self.vehicle_types_list)>=0.3:
+        if types=='bus' and len(np.where(np.asarray(self.vehicle_types_list)=='truck')[0])/len(self.vehicle_types_list)>=0.12:
             return 'truck'
         return types
         # if classes in ['bicycle', 'motorcycle']:
@@ -367,11 +366,11 @@ class JDETracker(object):
                 if obj in self.obj_interest:
                     x1, y1, x2, y2 = out[0]['rois'][j].astype(np.int)
                     #bike,bicycle
-                    if (y2-y1)>=150 and float(out[0]['scores'][j])<=0.35:
+                    if (y2-y1)>=150 and float(out[0]['scores'][j])<=0.15:
                         continue
-                    if (y1+y2)/2> 0.4*height and float(out[0]['scores'][j])<=0.25 and obj not in self.person_or_motorcycle:
+                    if (y1+y2)/2> 0.4*height and float(out[0]['scores'][j])<=0.2 and obj not in self.person_or_motorcycle:
                         continue
-                    if obj not in self.person_or_motorcycle and float(out[0]['scores'][j])>=0.2:
+                    if obj not in self.person_or_motorcycle and float(out[0]['scores'][j])>=0.3:
                         bbox.append([x1, y1, x2, y2])
                         score.append( float(out[0]['scores'][j]))
                         types.append(obj)
@@ -429,7 +428,7 @@ class JDETracker(object):
         detections=heuristic_occlusion_detection(detections)
         match_thres=100
         dists=np.zeros(shape=(len(strack_pool),len(detections)))
-        dists = matching.gate_cost_matrix(self.kalman_filter, dists, strack_pool, detections,type_diff=True)
+        dists = matching.gate_cost_matrix6(self.kalman_filter, dists, strack_pool, detections,type_diff=True)
         #dists = matching.fuse_motion(self.opt,self.kalman_filter, dists, strack_pool, detections,lost_map=lost_map_tracks,occlusion_map=occlusion_map,thres=match_thres)
         matches, u_track, u_detection = matching.linear_assignment(dists, thresh=match_thres)
         
@@ -553,6 +552,8 @@ class JDETracker(object):
                     out_direction='bottom' if str(movement_id)=='1' else 'up'
                     predict_long=20 if track.huge_vehicle else None
                     frame_id=self.frame_id+kalman_predict_out_line(track,line_interest,out_direction,predict_long)
+                    if str(out_direction)==2 and track.track_trajectory[0][0]<=570:
+                        continue
                     out_of_polygon_tracklet.append((frame_id,track.track_id,track_type,movement_id))
             else:
                 lost_stracks_copy.append(track)

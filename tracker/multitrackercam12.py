@@ -12,7 +12,6 @@ from tracking_utils.utils import *
 from tracker.basetrack import BaseTrack, TrackState
 from scipy.spatial.distance import cdist
 from imutils.object_detection import non_max_suppression
-import torchreid
 import math
 from torchvision.transforms import Resize,Normalize,ToTensor,Compose
 from PIL import Image
@@ -289,9 +288,9 @@ class JDETracker(object):
         self.polygon=polygon
         self.paths=paths
         self.polygon2=polygon2
-        self.line2=[self.polygon[1],self.polygon[2]]
-        self.line1=[self.polygon[4],self.polygon[3]] if len(self.polygon)==5 else [self.polygon[0],self.polygon[3]] if len(self.polygon)==4 else None
-        self.two_polygon_system=False
+        
+        self.line1=[self.polygon[1],self.polygon[2]]
+        self.two_polygon_system=True
         self.warmup_frame=6 if self.two_polygon_system else 0
         self.virtual_polygon= np.int32([
                 [
@@ -378,7 +377,6 @@ class JDETracker(object):
                         score.append( float(out[0]['scores'][j]))
                         types.append(obj)
                         huge_vehicles.append(False)
-            print(huge_vehicles)
             
 
         # vis
@@ -404,7 +402,7 @@ class JDETracker(object):
         else:
             detections = []
         
-        detections_plot=detections.copy()
+        detections_plot=copy.deepcopy(detections)
 
 
         ''' Add newly detected tracklets to tracked_stracks'''
@@ -477,7 +475,12 @@ class JDETracker(object):
         """ Step 4: Init new stracks"""
         for inew in u_detection:
             track = detections[inew]
-            track_init_polygon=init_polygon if not track.huge_vehicle else virtual_polygon
+            if track.huge_vehicle:
+                track_init_polygon=virtual_polygon
+            elif track.infer_type() in ['bus','truck','car']:
+                track_init_polygon=self.polygon
+            else:
+                track_init_polygon=init_polygon
             if track.score < self.det_thresh or track.occlusion_status==True or  check_bbox_outside_polygon(track_init_polygon,track.tlbr):
                 continue
             # track_types=self.person_or_motorcycle[0] if tlbrs_to_mean_area(track.track_trajectory) <=1500 else track.infer_type()
@@ -509,7 +512,7 @@ class JDETracker(object):
 
                         track_center=[ [(x[0]+x[2])/2,(x[1]+x[3])/2] for x in track.track_trajectory]
                         movement_id=counting_moi(self.paths,[(track_center[0],track_center[-1])])[0]
-                        line_interest=self.line1 if str(movement_id)=='1' else self.line2
+                        line_interest=self.line1 
                         out_direction='up'
                         frame_id=self.frame_id+kalman_predict_out_line(track,line_interest,out_direction)
                         out_of_polygon_tracklet.append((frame_id,track.track_id,track_type,movement_id))
@@ -538,7 +541,7 @@ class JDETracker(object):
                 if ((len(track.track_frames)>=2 and self.frame_id <=5) or (len(track.track_frames)>=6 and self.frame_id>=self.warmup_frame+5)):
                     track_center=[ [(x[0]+x[2])/2,(x[1]+x[3])/2] for x in track.track_trajectory]
                     movement_id=counting_moi(self.paths,[(track_center[0],track_center[-1])])[0]
-                    line_interest=self.line1 if str(movement_id)=='1' else self.line2
+                    line_interest=self.line1 
                     out_direction='up'
                     frame_id=self.frame_id+kalman_predict_out_line(track,line_interest,out_direction)
                     out_of_polygon_tracklet.append((frame_id,track.track_id,track_type,movement_id))
@@ -649,17 +652,17 @@ class JDETracker(object):
         self.lost_stracks=new_lost_tracks
 
 def kalman_predict_out_line(track,line,out_direction):
-    print(track.track_id)
-    print(line)
-    print(out_direction)
-    print(track.tlbr)
+    # print(track.track_id)
+    # print(line)
+    # print(out_direction)
+    # print(track.tlbr)
     if box_line_relative(track.tlbr,line)==out_direction:
         return 0
     predict_num_out=0
     prev_mean,prev_cov=track.mean,track.covariance
     kal_man=KalmanFilter()
-    predict_thres=0 if out_direction=='up' else 0
-    max_long_predict=8 if out_direction=='up' else 2 if track.infer_type() in ['person','motorcycle','biycycle'] else 5
+    predict_thres=5 if out_direction=='up' else 0
+    max_long_predict=20 if out_direction=='up' else 2 if track.infer_type() in ['person','motorcycle','biycycle'] else 5
     while  box_line_relative(mean_to_tlbr(prev_mean),line) !=out_direction:
         predict_num_out+=1
         cur_mean=prev_mean #of t
@@ -671,7 +674,7 @@ def kalman_predict_out_line(track,line,out_direction):
         prev_mean,prev_cov=new_mean,new_cov #of t+1
         if predict_num_out>=max_long_predict or np.sum(np.abs(cur_mean-mean))==0:
             break
-        print(mean_to_tlbr(mean))
+        # print(mean_to_tlbr(mean))
 
     return predict_num_out
 import copy
@@ -684,7 +687,7 @@ def mean_to_tlbr(mean):
     
 
 
-def heuristic_occlusion_detection(detections,thres=0.6): #0.5
+def heuristic_occlusion_detection(detections,thres=0.5): #0.5
     detection_tlbrscores=  [np.append(detection.tlbr,[detection.score]) for detection in detections] 
     detection_tlbrscores=  np.asarray(detection_tlbrscores)
     occ_iou=[]
@@ -706,8 +709,7 @@ def heuristic_occlusion_detection(detections,thres=0.6): #0.5
         occ_iou.append(detections[idx].iou_box)
         if num_invalid >=2 :
             detections[idx].occlusion_status=True
-            if box_area<=3000 and detection_tlbrscore[4] >=0.55:
-                new_detection_pool.append(detections[idx])
+            
         else:
             new_detection_pool.append(detections[idx])
         if (num_invalid_thres2>=2 and box_area>40000):
