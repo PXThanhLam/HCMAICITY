@@ -340,7 +340,7 @@ class JDETracker(object):
         two_wheel_polygon=init_polygon
         four_wheel_polygon=self.polygon
         virtual_polygon=self.virtual_polygon
-        huge_box_thres=230
+        huge_box_thres=140
         ''' Step 1: Network forward, get detections & embeddings'''
         with torch.no_grad():
             ori_imgs, framed_imgs, framed_metas = preprocess([img0], max_size=self.input_size)

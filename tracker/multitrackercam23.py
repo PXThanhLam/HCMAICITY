@@ -12,7 +12,6 @@ from tracking_utils.utils import *
 from tracker.basetrack import BaseTrack, TrackState
 from scipy.spatial.distance import cdist
 from imutils.object_detection import non_max_suppression
-import torchreid
 import math
 from torchvision.transforms import Resize,Normalize,ToTensor,Compose
 from PIL import Image
@@ -341,7 +340,7 @@ class JDETracker(object):
         two_wheel_polygon=init_polygon
         four_wheel_polygon=self.polygon
         virtual_polygon=self.virtual_polygon
-        huge_box_thres=230
+        huge_box_thres=140
         ''' Step 1: Network forward, get detections & embeddings'''
         with torch.no_grad():
             ori_imgs, framed_imgs, framed_metas = preprocess([img0], max_size=self.input_size)
@@ -365,7 +364,7 @@ class JDETracker(object):
                 if obj in self.obj_interest:
                     x1, y1, x2, y2 = out[0]['rois'][j].astype(np.int)
                     #bike,bicycle
-                    if (y1+y2)/2>height/2 and float(out[0]['scores'][j])<=0.3:
+                    if (y1+y2)/2>0.45*height and (x1+x2)/2<0.5*width and float(out[0]['scores'][j])<=0.35:
                         continue
                     elif (y1+y2)/2>2*height/5 and float(out[0]['scores'][j])<=0.35 and obj not in self.person_or_motorcycle:
                         continue
@@ -711,8 +710,8 @@ def heuristic_occlusion_detection(detections,thres=0.6): #0.5
         occ_iou.append(detections[idx].iou_box)
         if num_invalid >=2 :
             detections[idx].occlusion_status=True
-            if box_area<=3000 and detection_tlbrscore[4] >=0.55:
-                new_detection_pool.append(detections[idx])
+            # if box_area<=3000 and detection_tlbrscore[4] >=0.55:
+            #     new_detection_pool.append(detections[idx])
         else:
             new_detection_pool.append(detections[idx])
         if (num_invalid_thres2>=2 and box_area>40000):

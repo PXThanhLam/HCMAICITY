@@ -724,7 +724,7 @@ def mean_to_tlbr(mean):
     
 
 
-def heuristic_occlusion_detection(detections,thres=0.6): #0.5
+def heuristic_occlusion_detection(detections,thres=0.45): #0.5
     detection_tlbrscores=  [np.append(detection.tlbr,[detection.score]) for detection in detections] 
     detection_tlbrscores=  np.asarray(detection_tlbrscores)
     occ_iou=[]
