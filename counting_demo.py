@@ -40,8 +40,8 @@ def eval_seq(opt, dataloader,polygon, paths, data_type, result_filename, frame_d
 
     for path, img, img0 in dataloader:
         img0_clone=copy.copy(img0)
-        if frame_id % 1 == 0:
-            logger.info('Processing frame {} ({:.2f} fps)'.format(frame_id, 1. / max(1e-5, timer.average_time)))
+        # if frame_id % 1 == 0:
+        #     logger.info('Processing frame {} ({:.2f} fps)'.format(frame_id, 1. / max(1e-5, timer.average_time)))
            
 
         # run tracking
@@ -122,11 +122,10 @@ def eval_seq(opt, dataloader,polygon, paths, data_type, result_filename, frame_d
         #     cv2.imwrite(os.path.join(bbox_dir, '{:05d}.jpg'.format(frame_id)), bbox_im)
         #     cv2.imwrite(os.path.join(frame_dir, '{:05d}.jpg'.format(frame_id)),img0_clone)
 
-        # frame_id += 1
-        # if frame_id==15:
+        frame_id += 1
+        # if frame_id==150:
         #     BaseTrack._count=0
-        BaseTrack._count=0
-        return frame_id, timer.average_time, timer.calls
+        #     return frame_id, timer.average_time, timer.calls
         
     # save results
     return frame_id, timer.average_time, timer.calls
@@ -146,7 +145,7 @@ def demo(opt,polygon1,polygon2,prepath=None,cam_id=None):
     result_filename = os.path.join(result_root, 'results.txt')
     frame_rate = dataloader.frame_rate
    
-    print(paths)
+    print(cam_id)
     frame_tracking_dir = None if opt.output_format == 'text' else osp.join(result_root, 'frame_tracking')
     bbox_dir  = None if opt.output_format == 'text' else osp.join(result_root, 'bbox_detection')
     frame_dir =  None if opt.output_format == 'text' else osp.join(result_root, 'frame_dir')
