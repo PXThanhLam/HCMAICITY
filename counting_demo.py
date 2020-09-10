@@ -104,28 +104,29 @@ def eval_seq(opt, dataloader,polygon, paths, data_type, result_filename, frame_d
             cv2.polylines(img0_clone,[np.asarray(polygon)],True,(0,255,255))
             cv2.imshow('online_im', online_im)
             cv2.imshow('bbox_im',bbox_im)
-        if save_dir is not None:
-            cv2.polylines(online_im,[np.asarray(polygon)],True,(0,255,255))
-            cv2.polylines(bbox_im,[np.asarray(polygon)],True,(0,255,255))
-            # cv2.polylines(bbox_im,[np.asarray(paths['3'])],True,(0,255,255))
-            # cv2.polylines(bbox_im,[np.asarray(paths['4'])],True,(0,255,255))
+        # if save_dir is not None:
+        #     cv2.polylines(online_im,[np.asarray(polygon)],True,(0,255,255))
+        #     cv2.polylines(bbox_im,[np.asarray(polygon)],True,(0,255,255))
+        #     # cv2.polylines(bbox_im,[np.asarray(paths['3'])],True,(0,255,255))
+        #     # cv2.polylines(bbox_im,[np.asarray(paths['4'])],True,(0,255,255))
 
-            if polygon2 is not None:
-                cv2.polylines(online_im,[np.asarray(polygon2)],True,(0,0,255))
-                cv2.polylines(bbox_im,[np.asarray(polygon2)],True,(0,0,255))
-            if line1 is not None and line2 is not None:
-                cv2.polylines(online_im,[np.asarray(line1)],True,(134,128,255))
-                cv2.polylines(online_im,[np.asarray(line2)],True,(134,128,255))
+        #     if polygon2 is not None:
+        #         cv2.polylines(online_im,[np.asarray(polygon2)],True,(0,0,255))
+        #         cv2.polylines(bbox_im,[np.asarray(polygon2)],True,(0,0,255))
+        #     if line1 is not None and line2 is not None:
+        #         cv2.polylines(online_im,[np.asarray(line1)],True,(134,128,255))
+        #         cv2.polylines(online_im,[np.asarray(line2)],True,(134,128,255))
 
-            #cv2.polylines(img0_clone,[np.asarray(polygon)],True,(0,255,255))
-            cv2.imwrite(os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), online_im)
-            cv2.imwrite(os.path.join(bbox_dir, '{:05d}.jpg'.format(frame_id)), bbox_im)
-            cv2.imwrite(os.path.join(frame_dir, '{:05d}.jpg'.format(frame_id)),img0_clone)
+        #     #cv2.polylines(img0_clone,[np.asarray(polygon)],True,(0,255,255))
+        #     cv2.imwrite(os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), online_im)
+        #     cv2.imwrite(os.path.join(bbox_dir, '{:05d}.jpg'.format(frame_id)), bbox_im)
+        #     cv2.imwrite(os.path.join(frame_dir, '{:05d}.jpg'.format(frame_id)),img0_clone)
 
-        frame_id += 1
-        if frame_id==15:
-            BaseTrack._count=0
-            return frame_id, timer.average_time, timer.calls
+        # frame_id += 1
+        # if frame_id==15:
+        #     BaseTrack._count=0
+        BaseTrack._count=0
+        return frame_id, timer.average_time, timer.calls
         
     # save results
     return frame_id, timer.average_time, timer.calls
