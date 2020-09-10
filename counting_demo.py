@@ -128,7 +128,7 @@ def demo(opt,polygon1,polygon2,prepath=None):
     bbox_dir  = None if opt.output_format == 'text' else osp.join(result_root, 'bbox_detection')
     frame_dir =  None if opt.output_format == 'text' else osp.join(result_root, 'frame_dir')
     print(frame_dir)
-    eval_seq(opt, dataloader,polygon, paths, 'mot', result_filename, frame_dir=frame_dir,save_dir=frame_tracking_dir,bbox_dir=bbox_dir, show_image=False, 
+    eval_seq(opt, dataloader,polygon, paths, 'mot', result_filename, frame_dir=frame_dir,save_dir=None,bbox_dir=bbox_dir, show_image=False, 
              frame_rate=frame_rate,polygon2=polygon2,line1=None,line2=None)
 
     if opt.output_format == 'video':
@@ -157,12 +157,17 @@ elif opt_glob.cam_id=='09':
     opt_glob.detection_model='FasterRcnn'
 elif opt_glob.cam_id=='10':
     opt_glob.detection_model='Efficient'
+elif opt_glob.cam_id=='11':
+    opt_glob.detection_model='Efficient'
+elif opt_glob.cam_id=='12':
+    opt_glob.detection_model='Efficient'
 if __name__ == '__main__':
     opt = opts().init()
     cam_id=opt.cam_id
-    opt.input_video='TestSet/cam_'+cam_id+'.mp4'
-    opt.input_meta ='TestSet/zones-movement_paths/cam_'+cam_id+'.json'
+    opt.input_video='/data/test_data/cam_'+cam_id+'.mp4'
+    opt.input_meta ='/data/test_data/zones-movement_paths/cam_'+cam_id+'.json'
     opt.output_root='results/cam_'+str(cam_id)
+    paths=None
     if opt.cam_id=='01':
         opt.conf_thres=0.15
         opt.det_thres=0.15
@@ -667,11 +672,109 @@ if __name__ == '__main__':
                     660.3809523809523
                 ]
             ]
-        paths={'1': [(491, 244), (355, 678)], '2': [(1139, 674), (754, 236)], '3': [(455, 238), (193, 325)], '4': [(59, 532), (732, 241)], '5': [(936, 675), (171, 349)], '6': [(77, 499), (214, 697)], '7': [(998, 679), (1178, 394)], '8': [(55, 510), (1178, 388)], '9': [(1147, 365), (775, 243)], '10': [(726,256), (1139, 388)], '11': [(1164, 370), (179, 335)], '12': [(1165, 247), (375, 693)]}
+        paths={'1': [(491, 244), (355, 678)], '2': [(1139, 674), (754, 236)], '3': [(455, 238), (193, 325)], '4': [(59, 532), (732, 241)], '5': [(936, 675), (171, 349)], '6': [(77, 499), (214, 697)], '7': [(998, 679), (1178, 394)], '8': [(55, 510), (1178, 388)], '9': [(1147, 365), (775, 243)], '10': [(726,256), (1139, 388)], '11': [(1164, 370), (179, 335)], '12': [(1165, 300), (375, 693)]}
         opt.detection_model='Efficient'
         opt.compound_coef=4
         opt.min_img_size=400
         opt_glob=opt
         from tracker.multitrackercam10 import JDETracker
-   
+    elif opt.cam_id=='11':
+        opt.conf_thres=0.25
+        opt.det_thres=0.25
+        
+        polygon1=[
+                [
+                    434.0967741935484,
+                    369.4516129032258
+                ],
+                [
+                    797.8064516129033,
+                    369.6774193548387
+                ],
+                [
+                    984.9032258064516,
+                    574.1612903225806
+                ],
+                [
+                    249.41935483870967,
+                    584.6451612903226
+                ]
+            ]
+        polygon2=[
+                [
+                    434.0967741935484,
+                    360.4516129032258
+                ],
+                [
+                    797.8064516129033,
+                    363.6774193548387
+                ],
+                [
+                    984.9032258064516,
+                    574.1612903225806
+                ],
+                [
+                    249.41935483870967,
+                    584.6451612903226
+                ]
+            ]
+        opt.detection_model='Efficient'
+        opt.compound_coef=4
+        opt.min_img_size=400
+        opt_glob=opt
+        from tracker.multitrackercam11 import JDETracker
+    elif opt.cam_id=='12':
+        opt.conf_thres=0.25
+        opt.det_thres=0.25
+        
+        polygon1=[
+                [
+                    0.04761904761904,
+                    495.5238095238095
+                ],
+                [
+                    480.2380952380952,
+                    330.6190476190476
+                ],
+                [
+                    1270.7142857142856,
+                    435.85714285714283
+                ],
+                [
+                    1280,
+                    719
+                ],
+		[
+                    0.04761904761904,
+                    635.5238095238095
+                ]
+
+            ]
+        polygon2=[
+                [
+                    0.04761904761904,
+                    495.5238095238095
+                ],
+                [
+                    410.2380952380952,
+                    353.6190476190476
+                ],
+                [
+                    1272.7142857142856,
+                    491.85714285714283
+                ],
+                [
+                    1280,
+                    719
+                ],
+		[
+                    0.04761904761904,
+                    635.5238095238095
+                ]
+            ]
+        opt.detection_model='Efficient'
+        opt.compound_coef=3
+        opt.min_img_size=400
+        opt_glob=opt
+        from tracker.multitrackercam12 import JDETracker
     demo(opt,polygon1,polygon2,paths)
