@@ -603,11 +603,11 @@ class JDETracker(object):
         #self.merge_track()
         output_stracks = [track for track in self.tracked_stracks if track.is_activated]
 
-        logger.debug('===========Frame {}=========='.format(self.frame_id))
-        logger.debug('Activated: {}'.format([track.track_id for track in activated_starcks]))
-        logger.debug('Refind: {}'.format([track.track_id for track in refind_stracks]))
-        logger.debug('Lost: {}'.format([track.track_id for track in lost_stracks]))
-        logger.debug('Removed: {}'.format([track.track_id for track in removed_stracks]))
+        # logger.debug('===========Frame {}=========='.format(self.frame_id))
+        # logger.debug('Activated: {}'.format([track.track_id for track in activated_starcks]))
+        # logger.debug('Refind: {}'.format([track.track_id for track in refind_stracks]))
+        # logger.debug('Lost: {}'.format([track.track_id for track in lost_stracks]))
+        # logger.debug('Removed: {}'.format([track.track_id for track in removed_stracks]))
         
         return output_stracks,detections_plot,out_of_polygon_tracklet
 
@@ -673,10 +673,10 @@ class JDETracker(object):
         self.lost_stracks=new_lost_tracks
 
 def kalman_predict_out_line(track,line,out_direction):
-    print(track.track_id)
-    print(line)
-    print(out_direction)
-    print(track.tlbr)
+    # print(track.track_id)
+    # print(line)
+    # print(out_direction)
+    # print(track.tlbr)
     if box_line_relative(track.tlbr,line)==out_direction:
         return 0
     predict_num_out=0
@@ -695,7 +695,7 @@ def kalman_predict_out_line(track,line,out_direction):
         prev_mean,prev_cov=new_mean,new_cov #of t+1
         if predict_num_out>=max_long_predict or np.sum(np.abs(cur_mean-mean))==0:
             break
-        print(mean_to_tlbr(mean))
+        # print(mean_to_tlbr(mean))
 
     return predict_num_out
 import copy
