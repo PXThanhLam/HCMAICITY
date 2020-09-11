@@ -89,7 +89,7 @@ class opts(object):
     #for faster
     self.parser.add_argument('--big_veh_thres', type=float, default=0.2, help='confidence thresh for detection')
 
-    self.parser.add_argument('--cam_id', type=str, default='10', help='inference batch size')
+    self.parser.add_argument('--cam_id', type=str, default='09', help='inference batch size')
     self.parser.add_argument('--inference_batch_size', type=float, default=32, help='inference batch size')
     self.parser.add_argument('--nms_thres', type=float, default=0.5, help='iou thresh for nms') #cam4,5,6,7,8,9,11,13,14  0.5
     self.parser.add_argument('--track_buffer', type=int, default=15, help='tracking buffer') #cam4,5,6,7,8,9,11,13,14   15 #cam20 18 #cam23 9
@@ -100,6 +100,8 @@ class opts(object):
     self.parser.add_argument('--output-format', type=str, default='video', help='video or text')
     self.parser.add_argument('--output-root', type=str, default='', help='expected output root path')
     self.parser.add_argument('--compound_coef', type=int, default=3, help='compound_coef of efficientdet')
+
+    self.parser.add_argument('--cam_list', type=str, default="01", help='')
 
     # mot
     self.parser.add_argument('--data_cfg', type=str,

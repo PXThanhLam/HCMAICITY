@@ -159,7 +159,8 @@ def demo(opt,polygon1,polygon2,prepath=None,cam_id=None):
     #     os.system(cmd_str)
 
 if __name__ == '__main__':
-    cam_ids=['01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25']
+    glob_obt=opts().init()
+    cam_ids=glob_obt.cam_list.split(',')#['01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25']
     for cam_id in cam_ids:
         opt = opts().init()
         opt.cam_id=cam_id
